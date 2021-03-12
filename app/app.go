@@ -46,5 +46,6 @@ func MakeHandler() http.Handler {
 
 	r.HandleFunc("/", indexHandler)
 	r.HandleFunc("/todos", getTodoListHandler)
+	
 	return r
 }

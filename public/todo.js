@@ -9,18 +9,16 @@
 			var item = $(this).prevAll('.todo-list-input').val();
 
 			if (item) {
-				todoListItem.append(
-					`<li><div class='form-check'><label class='form-check-label'><input class='checkbox' type='checkbox' />${item}<i class='input-helper'></i></label></div><i class='remove mdi mdi-close-circle-outline'></i></li>`
-				);
+				$.post('/todos', { name: item }, addItem);
 				todoListInput.val('');
 			}
 		});
 
-		var addItem = function (item) {
+		var addItem = (item) => {
 			todoListItem.append(
-				`<li ${
-					item.completed ? "class='completed'" : ''
-				}><div class='form-check'><label class='form-check-label'><input class='checkbox' type='checkbox' ${
+				`<li ${item.completed ? "class='completed'" : ''} id='${
+					item.id
+				}'><div class='form-check'><label class='form-check-label'><input class='checkbox' type='checkbox' ${
 					item.completed ? "checked='checked'" : ''
 				}/>${
 					item.name
@@ -28,24 +26,45 @@
 			);
 		};
 
-		$.get('/todos', function (items) {
-			items.forEach((e) => {
-				addItem(e);
-			});
+		$.get('/todos', (items) => {
+			for (let i = 0; i < items.length; i++) {
+				addItem(items[i]);
+			}
 		});
 
 		todoListItem.on('change', '.checkbox', function () {
-			if ($(this).attr('checked')) {
-				$(this).removeAttr('checked');
-			} else {
-				$(this).attr('checked', 'checked');
-			}
+			const id = $(this).closest('li').attr('id');
+			const $self = $(this);
 
-			$(this).closest('li').toggleClass('completed');
+			let complete = true;
+			if ($(this).attr('checked')) {
+				complete = false;
+			}
+			$.get(`/complete/${id}?complete=${complete}`, function () {
+				if (complete) {
+					$self.attr('checked', 'checked');
+				} else {
+					$self.removeAttr('checked');
+				}
+				$self.closest('li').toggleClass('completed');
+			});
 		});
 
-		todoListItem.on('click', '.remove', function () {
-			$(this).parent().remove();
+		todoListItem.on('click', '.remove', function (e) {
+			// $(this).parent().remove();
+			const id = $(this).closest('li').attr('id');
+			const $self = $(this);
+			$.ajax({
+				url: `/todos/${id}`,
+				type: 'DELETE',
+				success: function (data) {
+					if (data) {
+						const str = e.target.parentElement.firstChild.innerText;
+						$self.parent().remove();
+						alert(`You will delete Todo: ${str}`);
+					}
+				},
+			});
 		});
 	});
 })(jQuery);

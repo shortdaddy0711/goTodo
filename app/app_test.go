@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"strconv"
 	"testing"
 
 	"github.com/shortdaddy0711/goTodo/model"
@@ -58,7 +57,7 @@ func TestTodos(t *testing.T) {
 		}
 	}
 
-	resp, err = http.Get(ts.URL + "/complete/" + strconv.Itoa(id1) + "?complete=true")
+	resp, err = http.Get(ts.URL + "/complete/" + id1.String() + "?complete=true")
 	assert.NoError(err)
 	assert.Equal(http.StatusOK, resp.StatusCode)
 	resp, err = http.Get(ts.URL + "/todos")
@@ -74,7 +73,7 @@ func TestTodos(t *testing.T) {
 		}
 	}
 
-	req, _ := http.NewRequest("DELETE", ts.URL+"/todos/"+strconv.Itoa(id1), nil)
+	req, _ := http.NewRequest("DELETE", ts.URL+"/todos/"+id1.String(), nil)
 	resp, err = http.DefaultClient.Do(req)
 	assert.NoError(err)
 	assert.Equal(http.StatusOK, resp.StatusCode)

@@ -7,17 +7,21 @@
 			event.preventDefault();
 
 			var item = $(this).prevAll('.todo-list-input').val();
-
 			if (item) {
-				$.post('/todos', { name: item }, addItem);
+				$.ajax({
+					url: '/api/todos',
+					type: 'POST',
+					contentType: 'application/json',
+					data: JSON.stringify({ name: item, completed: false }),
+					success: addItem,
+				});
 				todoListInput.val('');
 			}
 		});
-
 		var addItem = (item) => {
 			todoListItem.append(
 				`<li ${item.completed ? "class='completed'" : ''} id='${
-					item.id
+					item._id
 				}'><div class='form-check'><label class='form-check-label'><input class='checkbox' type='checkbox' ${
 					item.completed ? "checked='checked'" : ''
 				}/>${
@@ -26,7 +30,7 @@
 			);
 		};
 
-		$.get('/todos', (items) => {
+		$.get('/api/todos', (items) => {
 			for (let i = 0; i < items.length; i++) {
 				addItem(items[i]);
 			}
@@ -40,7 +44,7 @@
 			if ($(this).attr('checked')) {
 				complete = false;
 			}
-			$.get(`/complete/${id}?complete=${complete}`, function () {
+			$.get(`/api/complete/${id}?complete=${complete}`, function () {
 				if (complete) {
 					$self.attr('checked', 'checked');
 				} else {
@@ -51,11 +55,10 @@
 		});
 
 		todoListItem.on('click', '.remove', function (e) {
-			// $(this).parent().remove();
 			const id = $(this).closest('li').attr('id');
 			const $self = $(this);
 			$.ajax({
-				url: `/todos/${id}`,
+				url: `/api/todos/${id}`,
 				type: 'DELETE',
 				success: function (data) {
 					if (data) {

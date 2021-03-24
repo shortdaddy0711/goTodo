@@ -1,49 +1,117 @@
 package model
 
 import (
-	"time"
+	"context"
+	"encoding/json"
+	"log"
+	"net/http"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/shortdaddy0711/goTodo/connection"
 )
 
 type Todo struct {
-	ID        int       `json:"id"`
-	Name      string    `json:"name"`
-	Completed bool      `json:"completed"`
-	CreatedAt time.Time `json:"created_at"`
+	ID        primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Name      string             `json:"name,omitempty" bson:"name,omitempty"`
+	Completed bool               `json:"completed" bson:"completed"`
+	// CreatedAt time.Time          `json:"created_at" bson:"created_at"`
 }
 
-var todoMap map[int]*Todo
+func GetTodos() []*Todo {
 
-func init() {
-	todoMap = make(map[int]*Todo)
-}
-
-func GetTodos() []*Todo{
 	list := []*Todo{}
-	for _, v := range todoMap {
-		list = append(list, v)
+
+	collection := connection.ConnectDB()
+
+	cur, err := collection.Find(context.TODO(), bson.M{})
+
+	if err != nil {
+		log.Fatal(err)
 	}
+
+	defer cur.Close(context.TODO())
+
+	for cur.Next(context.TODO()) {
+		var todo *Todo
+
+		err := cur.Decode(&todo)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		list = append(list, todo)
+	}
+
+	if err := cur.Err(); err != nil {
+		log.Fatal(err)
+	}
+
 	return list
 }
 
-func AddTodo(name string) *Todo{
-	id := len(todoMap) + 1
-	todo := &Todo{id, name, false, time.Now()}
-	todoMap[id] = todo
+func GetTodo(id string) *Todo {
+
+	var todo *Todo
+
+	collection := connection.ConnectDB()
+
+	_id, _ := primitive.ObjectIDFromHex(id)
+
+	err := collection.FindOne(context.TODO(), bson.M{"_id": _id}).Decode(&todo)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return todo
 }
 
-func RemoveTodo(id int) bool{
-	if _, ok := todoMap[id]; ok {
-		delete(todoMap, id)
-		return true
+func AddTodo(r *http.Request) *Todo {
+	var todo *Todo
+
+	_ = json.NewDecoder(r.Body).Decode(&todo)
+
+	collection := connection.ConnectDB()
+
+	_, err := collection.InsertOne(context.TODO(), todo)
+
+	if err != nil {
+		log.Fatal(err)
 	}
-	return false
+
+	return todo
 }
 
-func CompleteTodo(id int, complete bool) bool{
-	if todo, ok := todoMap[id]; ok {
-		todo.Completed = complete
-		return true
-	}
-	return false
+func RemoveTodo(id string) bool {
+	mongoId, _ := primitive.ObjectIDFromHex(id)
+
+	filter := bson.M{"_id": mongoId}
+
+	collection := connection.ConnectDB()
+
+	_, err := collection.DeleteOne(context.TODO(), filter)
+
+	return err == nil
+}
+
+func CompleteTodo(id string, complete string) bool {
+
+	mongoId, _ := primitive.ObjectIDFromHex(id)
+
+	filter := bson.M{"_id": mongoId}
+
+	completed := complete == "true"
+
+	update := bson.M{"$set": bson.M{"completed": completed}}
+
+	collection := connection.ConnectDB()
+
+	var todo *Todo
+
+	err := collection.FindOneAndUpdate(context.TODO(), filter, update).Decode(&todo)
+
+	return err == nil
 }

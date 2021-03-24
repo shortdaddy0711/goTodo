@@ -2,7 +2,6 @@ package app
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/shortdaddy0711/goTodo/model"
@@ -16,20 +15,30 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getTodoListHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	list := model.GetTodos()
 	rd.JSON(w, http.StatusOK, list)
 }
 
+func getTodoHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	vars := mux.Vars(r)
+	id := vars["id"]
+	todo := model.GetTodo(id)
+	rd.JSON(w, http.StatusOK, todo)
+}
+
 func addTodoHandler(w http.ResponseWriter, r *http.Request) {
-	name := r.FormValue("name")
-	todo := model.AddTodo(name)
+	w.Header().Set("Content-Type", "application/json")
+	todo := model.AddTodo(r)
 	rd.JSON(w, http.StatusCreated, todo)
 }
 
 func removeTodoHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	vars := mux.Vars(r)
-	intId, _ := strconv.Atoi(vars["id"])
-	ok := model.RemoveTodo(intId)
+	id := vars["id"]
+	ok := model.RemoveTodo(id)
 	if ok {
 		rd.JSON(w, http.StatusOK, true)
 	} else {
@@ -38,10 +47,11 @@ func removeTodoHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func completeTodoHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	vars := mux.Vars(r)
-	intId, _ := strconv.Atoi(vars["id"])
-	complete := r.FormValue("complete") == "true"
-	ok := model.CompleteTodo(intId, complete)
+	id := vars["id"]
+	complete := r.FormValue("complete")
+	ok := model.CompleteTodo(id, complete)
 	if ok {
 		rd.JSON(w, http.StatusOK, true)
 	} else {
@@ -55,10 +65,11 @@ func MakeHandler() http.Handler {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", indexHandler)
-	r.HandleFunc("/todos", getTodoListHandler).Methods("GET")
-	r.HandleFunc("/todos", addTodoHandler).Methods("POST")
-	r.HandleFunc("/todos/{id:[0-9]+}", removeTodoHandler).Methods("DELETE")
-	r.HandleFunc("/complete/{id:[0-9]+}", completeTodoHandler).Methods("GET")
+	r.HandleFunc("/api/todos", getTodoListHandler).Methods("GET")
+	r.HandleFunc("/api/todos", addTodoHandler).Methods("POST")
+	r.HandleFunc("/api/todos/{id}", getTodoHandler).Methods("GET")
+	r.HandleFunc("/api/todos/{id}", removeTodoHandler).Methods("DELETE")
+	r.HandleFunc("/api/complete/{id}", completeTodoHandler).Methods("GET")
 
 	return r
 }

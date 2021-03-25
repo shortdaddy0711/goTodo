@@ -76,11 +76,13 @@ func AddTodo(r *http.Request) *Todo {
 
 	collection := connection.ConnectDB()
 
-	_, err := collection.InsertOne(context.TODO(), todo)
+	result, err := collection.InsertOne(context.TODO(), todo)
 
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	todo.ID = result.InsertedID.(primitive.ObjectID)
 
 	return todo
 }
@@ -98,7 +100,6 @@ func RemoveTodo(id string) bool {
 }
 
 func CompleteTodo(id string, complete string) bool {
-
 	mongoId, _ := primitive.ObjectIDFromHex(id)
 
 	filter := bson.M{"_id": mongoId}

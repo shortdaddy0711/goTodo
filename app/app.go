@@ -2,12 +2,15 @@ package app
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
 	"github.com/shortdaddy0711/goTodo/model"
 	"github.com/unrolled/render"
 )
 
+var store = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
 var rd *render.Render
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {

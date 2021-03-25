@@ -16,6 +16,6 @@ func main() {
 	log.Println("started app")
 	err := http.ListenAndServe(":3000", n)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }

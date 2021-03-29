@@ -2,16 +2,31 @@ package app
 
 import (
 	"net/http"
-	"os"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/shortdaddy0711/goTodo/model"
 	"github.com/unrolled/render"
+	"github.com/urfave/negroni"
 )
 
-var store = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
-var rd *render.Render
+var store = sessions.NewCookieStore([]byte(goDotEnvVariable("SESSION_KEY")))
+var rd *render.Render = render.New()
+
+func getSessionID(r *http.Request) string {
+	session, err := store.Get(r, "session")
+	if err != nil {
+		return ""
+	}
+
+	val := session.Values["id"]
+	if val == nil {
+		return ""
+	}
+	return val.(string)
+
+}
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/todo.html", http.StatusTemporaryRedirect)
@@ -62,10 +77,32 @@ func completeTodoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func CheckSignin(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+
+	if strings.Contains(r.URL.Path, "/signin") ||
+		strings.Contains(r.URL.Path, "/auth") {
+		next(w, r)
+		return
+	}
+
+	sessionID := getSessionID(r)
+	if sessionID != "" {
+		next(w, r)
+		return
+	}
+
+	http.Redirect(w, r, "/signin.html", http.StatusTemporaryRedirect)
+}
+
 func MakeHandler() http.Handler {
 
-	rd = render.New()
 	r := mux.NewRouter()
+	n := negroni.New(
+		negroni.NewRecovery(),
+		negroni.NewLogger(),
+		negroni.HandlerFunc(CheckSignin),
+		negroni.NewStatic(http.Dir("public")))
+	n.UseHandler(r)
 
 	r.HandleFunc("/", indexHandler)
 	r.HandleFunc("/api/todos", getTodoListHandler).Methods("GET")
@@ -73,6 +110,8 @@ func MakeHandler() http.Handler {
 	r.HandleFunc("/api/todos/{id}", getTodoHandler).Methods("GET")
 	r.HandleFunc("/api/todos/{id}", removeTodoHandler).Methods("DELETE")
 	r.HandleFunc("/api/complete/{id}", completeTodoHandler).Methods("GET")
+	r.HandleFunc("/auth/google/login", googleLoginHandler)
+	r.HandleFunc("/auth/google/callback", googleOAuthCallBack)
 
-	return r
+	return n
 }

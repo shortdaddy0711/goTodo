@@ -9,10 +9,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
-	"github.com/joho/godotenv"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
@@ -25,19 +23,11 @@ type GoogleUserID struct {
 }
 
 var googleOAuthConfig = oauth2.Config{
-	RedirectURL:  "http://localhost:8000/auth/google/callback",
+	RedirectURL:  goDotEnvVariable("REDIRECTURL"),
 	ClientID:     goDotEnvVariable("GOOGLE_CLIENT_ID"),
 	ClientSecret: goDotEnvVariable("GOOGLE_SECRET_KEY"),
-	Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email"},
+	Scopes:       []string{goDotEnvVariable("SCOPESTR")},
 	Endpoint:     google.Endpoint,
-}
-
-func goDotEnvVariable(key string) string {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalf("Error loading .env file")
-	}
-	return os.Getenv(key)
 }
 
 func googleLoginHandler(w http.ResponseWriter, r *http.Request) {

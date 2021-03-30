@@ -15,6 +15,7 @@ func TestTodos(t *testing.T) {
 	assert := assert.New(t)
 	ts := httptest.NewServer(MakeHandler())
 	defer ts.Close()
+
 	v1 := url.Values{}
 	v1.Set("name", "Test todo1")
 	resp, err := http.PostForm(ts.URL+"/api/todos", v1)

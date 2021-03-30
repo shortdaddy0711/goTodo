@@ -1,11 +1,14 @@
 package app
 
 import (
+	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
+	"github.com/joho/godotenv"
 	"github.com/shortdaddy0711/goTodo/model"
 	"github.com/unrolled/render"
 	"github.com/urfave/negroni"
@@ -13,6 +16,14 @@ import (
 
 var store = sessions.NewCookieStore([]byte(goDotEnvVariable("SESSION_KEY")))
 var rd *render.Render = render.New()
+
+func goDotEnvVariable(key string) string {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file", err)
+	}
+	return os.Getenv(key)
+}
 
 func getSessionID(r *http.Request) string {
 	session, err := store.Get(r, "session")
@@ -25,7 +36,6 @@ func getSessionID(r *http.Request) string {
 		return ""
 	}
 	return val.(string)
-
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -33,8 +43,9 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getTodoListHandler(w http.ResponseWriter, r *http.Request) {
+	sessionId := getSessionID(r)
 	w.Header().Set("Content-Type", "application/json")
-	list := model.GetTodos()
+	list := model.GetTodos(sessionId)
 	rd.JSON(w, http.StatusOK, list)
 }
 
@@ -47,8 +58,9 @@ func getTodoHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func addTodoHandler(w http.ResponseWriter, r *http.Request) {
+	sessionId := getSessionID(r)
 	w.Header().Set("Content-Type", "application/json")
-	todo := model.AddTodo(r)
+	todo := model.AddTodo(r, sessionId)
 	rd.JSON(w, http.StatusCreated, todo)
 }
 

@@ -12,7 +12,11 @@
 					url: '/api/todos',
 					type: 'POST',
 					contentType: 'application/json',
-					data: JSON.stringify({ name: item, completed: false }),
+					data: JSON.stringify({
+						name: item,
+						// completed: false,
+						// createdat: new Date(Date.now()).toISOString(),
+					}),
 					success: addItem,
 				});
 				todoListInput.val('');

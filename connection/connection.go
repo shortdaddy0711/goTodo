@@ -37,7 +37,6 @@ func ConnectDB() *mongo.Collection {
 	}
 
 	fmt.Println("Connected to MongoDB!")
-	// defer client.Disconnect(context.TODO())
 
 	collection := client.Database(db).Collection(col)
 
